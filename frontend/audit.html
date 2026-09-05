@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SecuEAR — Audit Log</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wide">
+    <h1>Audit log</h1>
+    <p class="subtitle">Every enroll / verify / payment / recharge decision, with its score, thresholds, comparison mode, and reasoning — nothing here is hidden or summarized away.</p>
+
+    <div class="toolbar">
+      <label style="margin:0;">Limit</label>
+      <input type="text" id="limit" value="100" />
+      <button id="refresh-btn">Refresh</button>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>Event</th>
+            <th>User</th>
+            <th>Txn Ref</th>
+            <th>Score</th>
+            <th>Thresholds</th>
+            <th>Tier</th>
+            <th>Comparison</th>
+            <th>Reasoning</th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+    <div id="empty" class="empty-state" style="display:none;">No audit entries yet — enroll a user and run a payment to populate this log.</div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    renderNav("audit.html");
+
+    const body = document.getElementById("log-body");
+    const empty = document.getElementById("empty");
+
+    function tierPillClass(event) {
+      return { enroll: "enroll", verify: "verify", payment: "payment", recharge: "recharge" }[event] || "";
+    }
+
+    async function load() {
+      const limit = document.getElementById("limit").value || 100;
+      body.innerHTML = `<tr><td colspan="10" class="empty-state">Loading…</td></tr>`;
+      try {
+        const data = await getJSON(`/audit-log?limit=${encodeURIComponent(limit)}`);
+        const entries = data.entries || [];
+        if (entries.length === 0) {
+          body.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
+        empty.style.display = "none";
+        body.innerHTML = entries
+          .map(
+            (e) => `
+          <tr>
+            <td>${e.id}</td>
+            <td>${fmtTime(e.created_at)}</td>
+            <td><span class="pill ${tierPillClass(e.event_type)}">${e.event_type}</span></td>
+            <td>${e.user_id}</td>
+            <td>${e.txn_ref ?? "—"}</td>
+            <td>${e.match_score != null ? fmtScore(e.match_score) : "—"}</td>
+            <td>${e.high_threshold != null ? `${e.high_threshold} / ${e.med_threshold}` : "—"}</td>
+            <td>${e.decision_tier ?? "—"}</td>
+            <td>${e.comparison_mode ?? "—"}</td>
+            <td class="wrap">${e.reasoning}</td>
+          </tr>`
+          )
+          .join("");
+      } catch (err) {
+        body.innerHTML = `<tr><td colspan="10" class="empty-state">Failed to load: ${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById("refresh-btn").addEventListener("click", load);
+    load();
+  </script>
+</body>
+</html>

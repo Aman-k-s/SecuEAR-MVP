@@ -1,0 +1,8 @@
+backend/venv/
+backend/secuear.db
+backend/tmp_uploads/
+backend/depth_map_cache/*.png
+__pycache__/
+*.pyc
+.DS_Store
+docs/

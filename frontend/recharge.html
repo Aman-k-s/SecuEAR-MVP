@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SecuEAR — Recharge</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Recharge wallet</h1>
+    <p class="subtitle">Adds balance via the mocked Razorpay flow (Stage 9) — no real payment gateway is called.</p>
+
+    <div class="card">
+      <form id="recharge-form">
+        <label for="user_id">User ID</label>
+        <input type="text" id="user_id" name="user_id" placeholder="e.g. aman" required />
+
+        <label for="amount">Amount to add</label>
+        <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="e.g. 500" required />
+
+        <button type="submit">Recharge</button>
+      </form>
+
+      <div id="result" class="result"></div>
+    </div>
+
+    <div class="card">
+      <form id="lookup-form">
+        <label for="lookup_user_id">Check a user's balance</label>
+        <input type="text" id="lookup_user_id" placeholder="e.g. aman" required />
+        <button type="submit" class="secondary">Check balance</button>
+      </form>
+      <div id="lookup-result" class="result"></div>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    renderNav("recharge.html");
+
+    const form = document.getElementById("recharge-form");
+    const resultEl = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      resultEl.className = "result show";
+      resultEl.innerHTML = "Processing mock payment…";
+
+      const fd = new FormData(form);
+      try {
+        const data = await postForm("/wallet/recharge", fd);
+        resultEl.className = "result show approve";
+        resultEl.innerHTML = `
+          <div class="meta-line">Recharged <strong>${fmtMoney(data.amount)}</strong> for <strong>${data.user_id}</strong>.</div>
+          <div class="meta-line">Mock order: <code class="small">${data.mock_order_id}</code></div>
+          <div class="meta-line">New balance: <span class="balance-pill">${fmtMoney(data.wallet_balance)}</span></div>
+        `;
+        form.reset();
+      } catch (err) {
+        resultEl.className = "result show error";
+        resultEl.innerHTML = `<strong>Recharge failed:</strong> ${err.message}`;
+      }
+    });
+
+    const lookupForm = document.getElementById("lookup-form");
+    const lookupResult = document.getElementById("lookup-result");
+    lookupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById("lookup_user_id").value;
+      lookupResult.className = "result show";
+      lookupResult.innerHTML = "Checking…";
+      try {
+        const data = await getJSON(`/wallet/${encodeURIComponent(userId)}`);
+        lookupResult.className = "result show approve";
+        lookupResult.innerHTML = `<span class="balance-pill">${data.user_id}: ${fmtMoney(data.wallet_balance)}</span>`;
+      } catch (err) {
+        lookupResult.className = "result show error";
+        lookupResult.innerHTML = `<strong>Lookup failed:</strong> ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

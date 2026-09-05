@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SecuEAR — Enroll</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Enroll a new user</h1>
+    <p class="subtitle">Upload a person's <code class="small">left</code> ear scan (their enrollment scan) to register them and initialize a ₹0 wallet.</p>
+
+    <div class="card">
+      <form id="enroll-form">
+        <label for="user_id">User ID</label>
+        <input type="text" id="user_id" name="user_id" placeholder="e.g. aman" required />
+
+        <label for="name">Full name</label>
+        <input type="text" id="name" name="name" placeholder="e.g. Aman" required />
+
+        <label for="file">Ear scan (.ply)</label>
+        <input type="file" id="file" name="file" accept=".ply" required />
+        <div class="hint">Expected filename convention: <code class="small">{person}_left.ply</code>. Side is parsed from the filename automatically.</div>
+
+        <label for="side">Ear side override (optional)</label>
+        <input type="text" id="side" name="side" placeholder="left or right — leave blank to auto-detect from filename" />
+
+        <button type="submit">Enroll</button>
+      </form>
+
+      <div id="result" class="result"></div>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    renderNav("enroll.html");
+
+    const form = document.getElementById("enroll-form");
+    const resultEl = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      resultEl.className = "result";
+      resultEl.innerHTML = "Enrolling…";
+      resultEl.classList.add("show");
+
+      const fd = new FormData(form);
+      if (!fd.get("side")) fd.delete("side");
+
+      try {
+        const data = await postForm("/enroll", fd);
+        resultEl.className = "result show approve";
+        resultEl.innerHTML = `
+          <div class="meta-line">User <strong>${data.name}</strong> (${data.user_id}) enrolled successfully.</div>
+          <div class="meta-line">Enrolled ear side: <strong>${data.enrolled_side}</strong></div>
+          <div class="meta-line">Ear detection path (Stage 3): <code class="small">${data.ear_detection_path}</code></div>
+          <div class="meta-line">Wallet balance: ${fmtMoney(data.wallet_balance)}</div>
+        `;
+        form.reset();
+      } catch (err) {
+        resultEl.className = "result show error";
+        resultEl.innerHTML = `<strong>Enrollment failed:</strong> ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

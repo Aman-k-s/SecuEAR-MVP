@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecuEAR — Ear Biometric Wallet</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .grid-menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .menu-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, transform 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .menu-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .menu-icon {
+      font-size: 28px;
+    }
+    .menu-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+    .menu-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Secu<span class="dot">EAR</span></div>
+    <nav class="tabs">
+      <a href="index.html" class="active">Home</a>
+      <a href="enroll.html">Enroll</a>
+      <a href="pay.html">Pay (Kiosk)</a>
+      <a href="recharge.html">Recharge</a>
+      <a href="audit.html">Audit Log</a>
+    </nav>
+  </header>
+
+  <main class="wide">
+    <h1>SecuEAR Dashboard</h1>
+    <p class="subtitle">Ear-shape biometric authentication gating a closed-loop prepaid wallet.</p>
+
+    <div class="grid-menu">
+      <a href="enroll.html" class="menu-card">
+        <div class="menu-icon">👤</div>
+        <div class="menu-title">Enroll User</div>
+        <div class="menu-desc">Register a new user with an initial 3D <code>.ply</code> left-ear scan.</div>
+      </a>
+
+      <a href="pay.html" class="menu-card">
+        <div class="menu-icon">💳</div>
+        <div class="menu-title">Kiosk Payment</div>
+        <div class="menu-desc">Simulate kiosk checkout using a 3D ear scan to authorize wallet debits.</div>
+      </a>
+
+      <a href="recharge.html" class="menu-card">
+        <div class="menu-icon">💰</div>
+        <div class="menu-title">Recharge Wallet</div>
+        <div class="menu-desc">Add balance to a user's wallet via mocked Razorpay payment flow.</div>
+      </a>
+
+      <a href="audit.html" class="menu-card">
+        <div class="menu-icon">📊</div>
+        <div class="menu-title">Audit Trail</div>
+        <div class="menu-desc">View decision tiers, confidence match scores, and reasoning logs.</div>
+      </a>
+    </div>
+  </main>
+</body>
+</html>

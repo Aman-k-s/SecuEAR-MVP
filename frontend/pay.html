@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SecuEAR — Kiosk</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Kiosk — pay with your ear</h1>
+    <p class="subtitle">Scan (upload a <code class="small">right</code> or other verification scan) to authorize a wallet debit. The decision tier and match score are shown below, exactly as logged to the audit trail.</p>
+
+    <div class="card">
+      <form id="pay-form">
+        <label for="user_id">User ID</label>
+        <input type="text" id="user_id" name="user_id" placeholder="e.g. aman" required />
+
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="e.g. 150" required />
+
+        <label for="file">Ear scan (.ply)</label>
+        <input type="file" id="file" name="file" accept=".ply" required />
+        <div class="hint">Expected filename convention: <code class="small">{person}_right.ply</code> (or any other verification scan). Side is parsed automatically.</div>
+
+        <label for="side">Ear side override (optional)</label>
+        <input type="text" id="side" name="side" placeholder="left or right — leave blank to auto-detect from filename" />
+
+        <button type="submit" id="submit-btn">Scan &amp; Pay</button>
+      </form>
+
+      <div id="pin-section" style="display:none;">
+        <label for="pin">Simulated PIN</label>
+        <input type="text" id="pin" placeholder="Enter any PIN to simulate confirmation" />
+        <button type="button" id="confirm-pin-btn" class="secondary">Confirm PIN &amp; complete payment</button>
+        <div class="hint">This re-submits the same scan with <code class="small">pin_confirmed=true</code>, per the Stage 6 gate — no real PIN infrastructure exists.</div>
+      </div>
+
+      <div id="result" class="result"></div>
+    </div>
+  </main>
+
+  <script src="common.js"></script>
+  <script>
+    renderNav("pay.html");
+
+    const form = document.getElementById("pay-form");
+    const resultEl = document.getElementById("result");
+    const pinSection = document.getElementById("pin-section");
+    const submitBtn = document.getElementById("submit-btn");
+    let currentTxnRef = null;
+
+    function tierClass(tier) {
+      if (tier === "auto_approve") return "approve";
+      if (tier === "pin_required") return "pin";
+      return "deny";
+    }
+    function tierLabel(tier) {
+      return { auto_approve: "Auto-approved", pin_required: "PIN required", deny: "Denied" }[tier] || tier;
+    }
+
+    function renderOutcome(data) {
+      const cls = tierClass(data.decision_tier);
+      resultEl.className = `result show ${cls}`;
+      resultEl.innerHTML = `
+        <span class="tier-badge ${cls}">${tierLabel(data.decision_tier)}</span>
+        <div class="score-row"><span class="score">${fmtScore(data.match_score)}</span><span class="meta-line">cosine similarity</span></div>
+        <div class="meta-line">Thresholds: high ≥ ${data.high_threshold} · med ≥ ${data.med_threshold}</div>
+        <div class="meta-line">Comparison mode (Stage 4): <strong>${data.comparison_mode}</strong></div>
+        <div class="meta-line">Payment status: <strong>${data.payment_status}</strong> · Wallet balance: ${fmtMoney(data.wallet_balance)}</div>
+        <div class="meta-line">Mock order: <code class="small">${data.mock_order_id}</code></div>
+        <div class="reasoning">${data.reasoning}</div>
+      `;
+
+      if (data.decision_tier === "pin_required" && data.payment_status === "pending_pin") {
+        pinSection.style.display = "block";
+      } else {
+        pinSection.style.display = "none";
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      resultEl.className = "result show";
+      resultEl.innerHTML = "Scanning…";
+      pinSection.style.display = "none";
+
+      const fd = new FormData(form);
+      if (!fd.get("side")) fd.delete("side");
+      currentTxnRef = genTxnRef("pay");
+      fd.append("txn_ref", currentTxnRef);
+
+      // Stash the file so the PIN-confirmation follow-up can re-submit the same scan.
+      window.__lastPayFormData = fd;
+
+      try {
+        const data = await postForm("/pay", fd);
+        renderOutcome(data);
+      } catch (err) {
+        resultEl.className = "result show error";
+        resultEl.innerHTML = `<strong>Payment attempt failed:</strong> ${err.message}`;
+      }
+    });
+
+    document.getElementById("confirm-pin-btn").addEventListener("click", async () => {
+      const pin = document.getElementById("pin").value;
+      if (!pin) {
+        alert("Enter any value to simulate a PIN — no real PIN is validated.");
+        return;
+      }
+      const original = window.__lastPayFormData;
+      if (!original) return;
+
+      const fd = new FormData();
+      for (const [k, v] of original.entries()) fd.append(k, v);
+      fd.set("pin_confirmed", "true");
+
+      resultEl.innerHTML = "Confirming PIN…";
+      try {
+        const data = await postForm("/pay", fd);
+        renderOutcome(data);
+      } catch (err) {
+        resultEl.className = "result show error";
+        resultEl.innerHTML = `<strong>PIN confirmation failed:</strong> ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
