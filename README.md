@@ -2,8 +2,6 @@
 
 ### Cardless payments for people who can't carry a card.
 
-**Razorpay AI Buildathon 2026 — Open Track**
-
 ---
 
 ## The Problem
@@ -148,5 +146,3 @@ Punjab Engineering College, Chandigarh
 🔗 **GitHub:** [github.com/Aman-k-s/SecuEAR-Razorpay](https://github.com/Aman-k-s/SecuEAR-Razorpay.git)
 
 ---
-
-*Built for Razorpay AI Buildathon 2026 — Open Track.*
